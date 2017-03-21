@@ -1,7 +1,11 @@
 import * as qs from 'querystring';
 import * as _ from 'lodash';
 import * as request from 'request';
-import { GitlabOAuthOptions } from "./models";
+import * as https from 'https';
+import * as jsonWebToken from 'jsonwebtoken';
+
+import { GitlabOAuthOptions, GitlabAccessTokenObject } from './models';
+import { Encrypter } from './encrypter';
 
 
 
@@ -11,6 +15,8 @@ export class GitlabOAuth {
 
     authorizeUrl: string;
     accessTokenUrl: string;
+
+    encrypter = new Encrypter();
 
     constructor(options: GitlabOAuthOptions) {
         if (!options || !options.clientId || !options.clientSecret || !options.domainName) {
@@ -22,7 +28,7 @@ export class GitlabOAuth {
         this.accessTokenUrl = '://' + options.domainName + '/oauth/token';
     }
 
-    getAuthorizeURL(redirectUrl) {
+    getAuthorizeURL(redirectUrl: string) {
         if (!redirectUrl) {
             throw new Error('Parameter is not valid, redirect_uri is needed!');
         }
@@ -37,13 +43,13 @@ export class GitlabOAuth {
     };
 
 
-    getAccessToken(code, redirectUrl, callback) {
+    getAccessToken(code: any, redirectUrl: any, callback: any) {
         if (!code) { // || !opts.redirect_uri) {
             throw new Error('Options cannot be null and need the exchange code and redirect_uri!');
         }
 
         var that = this;
-        var oauth_data = {
+        var oauthData = {
             client_id: this.options.clientId,
             client_secret: this.options.clientSecret,
             grant_type: 'authorization_code',
@@ -52,14 +58,14 @@ export class GitlabOAuth {
         };
         // _.merge(oauth_data, opts);
 
-        var accessToken = new Promise<any>(function (resolve, reject) {
+        var accessToken = new Promise<any>(function (resolve: (value: any) => any, reject: (value: any) => any) {
             request.post({
                 url: that.options.protocol + that.accessTokenUrl,
-                form: oauth_data,
+                form: oauthData,
                 headers: {
                     'Accept': 'application/json'
                 }
-            }, function (err, response, body) {
+            }, function (err: any, response: any, body: any) {
                 if (err || response.statusCode >= 400) {
                     return reject(err || body || response.statusCode);
                 }
@@ -80,12 +86,70 @@ export class GitlabOAuth {
         }
 
         return accessToken.then(
-            function (res) {
+            function (res: any) {
                 callback(null, res);
-            }, function (err) {
+            }, function (err: any) {
                 callback(err);
             });
     };
 
+    generateJwt(gitlabToken: GitlabAccessTokenObject) {
+        // get info from gitlab to the logged User
+        return this.getGitlabUser(this.options.domainName, gitlabToken.access_token).then((userData) => {
 
+            // creates the jwt token
+            var token = jsonWebToken.sign({
+                payload: {
+                    gitlabToken: {
+                        accessTokenEnc: this.encrypter.encrypt(gitlabToken.access_token),
+                        expiresIn: gitlabToken.expires_in,
+                        tokenType: gitlabToken.token_type,
+                        refreshTokenEnc: this.encrypter.encrypt(gitlabToken.refresh_token),
+                    }
+                }
+            },
+                this.encrypter.keys.privateKey,
+                {
+                    algorithm: 'RS256',
+                    subject: `${this.options.domainName}/user/${userData.id}`,
+                    issuer: 'fast-gitlab-client',
+                    expiresIn: '360 minutes'
+                });
+
+
+            jsonWebToken.verify(token, this.encrypter.keys.publicKey, { algorithms: ['RS256'] }, (err) => {
+                if (err) {
+                    console.error('TOken não é válido!', err);
+                }
+            });
+            return token;
+        });
+    }
+
+    getGitlabUser(domainName: string, accessToken: string) {
+        var promise = new Promise<any>((resolve, reject) => {
+            var req = https.request({
+                host: domainName,
+                port: 443,
+                path: '/api/v3/user?access_token=' + accessToken,
+                method: 'GET',
+                rejectUnauthorized: false,
+                agent: false
+            }, (res => {
+                if (res.statusCode === 200) {
+                    res.on('data', (payload) => {
+                        var userData = JSON.parse(<string>payload);
+                        resolve(userData);
+                    });
+                } else {
+                    reject({
+                        statusCode: res.statusCode
+                    });
+                }
+
+            }));
+            req.end();
+        });
+        return promise;
+    }
 }

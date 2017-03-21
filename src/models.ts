@@ -4,6 +4,9 @@ export interface GitlabOAuthOptions {
     clientId: string;
     clientSecret: string;
     protocol?: string;
+    privateKey: string;
+    publicKey: string;
+    jwtConfig?: { secret: string, algorithms: string[] }
 }
 
 
