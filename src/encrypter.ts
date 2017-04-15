@@ -1,15 +1,13 @@
 import * as crypto from 'crypto';
 import * as constants from 'constants';
 
-import * as keys from './pks-keys';
 
 export class Encrypter {
     private certificate: string;
-    constructor() {
-        this.certificate = keys.get().privateKey;
-    }
 
-    keys = keys.get();
+    constructor(certificate: string | Buffer) {
+        this.certificate = (certificate instanceof Buffer) ? certificate.toString() : certificate;
+    }
 
     encrypt(data: any) {
         console.log('Encrypting ...', data);

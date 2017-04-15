@@ -7,7 +7,7 @@ import * as jsonWebToken from 'jsonwebtoken';
 import { GitlabOAuthOptions, GitlabAccessTokenObject } from './models';
 import { Encrypter } from './encrypter';
 
-
+import { GITLAB_OAUTH_PROXY_CONFIG } from './config';
 
 export class GitlabOAuth {
     options: GitlabOAuthOptions;
@@ -16,7 +16,7 @@ export class GitlabOAuth {
     authorizeUrl: string;
     accessTokenUrl: string;
 
-    encrypter = new Encrypter();
+    encrypter: Encrypter;
 
     constructor(options: GitlabOAuthOptions) {
         if (!options || !options.clientId || !options.clientSecret || !options.domainName) {
@@ -26,6 +26,7 @@ export class GitlabOAuth {
 
         this.authorizeUrl = '://' + options.domainName + '/oauth/authorize';
         this.accessTokenUrl = '://' + options.domainName + '/oauth/token';
+        this.encrypter = new Encrypter(options.privateKey);
     }
 
     getAuthorizeURL(redirectUrl: string) {
@@ -108,7 +109,7 @@ export class GitlabOAuth {
                     }
                 }
             },
-                this.encrypter.keys.privateKey,
+                GITLAB_OAUTH_PROXY_CONFIG.privateKey,
                 {
                     algorithm: 'RS256',
                     subject: `${this.options.domainName}/user/${userData.id}`,
@@ -117,7 +118,7 @@ export class GitlabOAuth {
                 });
 
 
-            jsonWebToken.verify(token, this.encrypter.keys.publicKey, { algorithms: ['RS256'] }, (err) => {
+            jsonWebToken.verify(token, GITLAB_OAUTH_PROXY_CONFIG.publicKey, { algorithms: ['RS256'] }, (err) => {
                 if (err) {
                     console.error('TOken não é válido!', err);
                 }

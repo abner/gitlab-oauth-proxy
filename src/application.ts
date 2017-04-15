@@ -1,7 +1,7 @@
 import * as express from 'express';
 import { Encrypter } from './encrypter';
 import { GitlabOAuthOptions, GitlabAccessTokenObject } from './models';
-import { get as getConfig } from './config';
+import { GITLAB_OAUTH_PROXY_CONFIG } from './config';
 import { oauthAuthorizeRoute } from './routes/authorize';
 import { oauthCallbackRoute } from './routes/callback';
 const expressJwt = require('express-jwt');
@@ -20,7 +20,7 @@ export class GitlabOAuthProxyApplication {
     private clientSecret: string;
     private serviceDomain: string;
     private privateKey: string;
-    private encrypter = new Encrypter();
+    private encrypter = new Encrypter(GITLAB_OAUTH_PROXY_CONFIG.privateKey);
     private config: GitlabOAuthOptions;
 
     public static PORT = 8080;
@@ -33,7 +33,7 @@ export class GitlabOAuthProxyApplication {
 
     constructor() {
         this.app = express();
-        this.config = getConfig();
+        this.config = GITLAB_OAUTH_PROXY_CONFIG;
         this.setupJwt();
         this.setupProxy();
         this.setupErrorHandler();
@@ -49,7 +49,7 @@ export class GitlabOAuthProxyApplication {
     }
 
     private setupMiddlewares() {
-        this.app.use(bodyParser.urlencoded({ extended: true }))
+        this.app.use(bodyParser.urlencoded({ extended: true }));
     }
 
     private setupJwt() {

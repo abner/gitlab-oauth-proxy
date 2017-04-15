@@ -1,17 +1,27 @@
 import * as express from 'express';
 import { GitlabOAuth } from '../gitlab-oauth';
-import { get as getConfig} from '../config';
-
-export function oauthCallbackRoute(req: express.Request, resp) {
+import { GITLAB_OAUTH_PROXY_CONFIG } from '../config';
+export function oauthCallbackRoute(req: express.Request, resp: express.Response) {
     let hostUrl: string = req.protocol + '://' + req.hostname;
 
-    let returnUrl = hostUrl + '/oauth_callback');
+    console.log('BASE URL', req.baseUrl);
 
-    let gitlabOAuth = new GitlabOAuth(getConfig());
+    let returnUrl = hostUrl + '/oauth_callback';
+
+    let gitlabOAuth = new GitlabOAuth(GITLAB_OAUTH_PROXY_CONFIG);
     let promisAccessToken = gitlabOAuth.getAccessToken(req.query.code, returnUrl, null);
     promisAccessToken.then((gitlabAccessTokenObject: any) => {
         gitlabOAuth.generateJwt(gitlabAccessTokenObject).then(
-            token => resp.send(token)
+            token => {
+                resp.cookie('access_token', token, {
+                    httpOnly: true,
+                    domain: req.host
+                });
+                let returnUrl = req.cookies['gitlab-proxy-returnUrl'];
+                resp.clearCookie('gitlab-proxy-returnUrl');
+                //resp.send(token);
+                resp.redirect(returnUrl);
+            }
         ).catch(reason => {
             //throw new Error(reason);
             resp.end(reason);

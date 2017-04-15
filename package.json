@@ -5,8 +5,8 @@
   "main": "gitlab-oauth.js",
   "scripts": {
     "test": "echo \"Error: no test specified\" && exit 1",
-    "start": "ts-node index.ts",
-    "start:production": "ts-node index.ts"
+    "start": "ts-node src/index.ts",
+    "start:production": "ts-node src/index.ts"
   },
   "keywords": [],
   "author": "",
@@ -26,6 +26,7 @@
     "@types/jsonwebtoken": "^7.2.0",
     "@types/lodash": "^4.14.54",
     "@types/request": "^0.0.41",
+    "dotenv": "^4.0.0",
     "nodemon": "^1.11.0",
     "ts-node": "^2.1.0",
     "tslint": "^4.5.1",

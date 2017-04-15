@@ -18,7 +18,7 @@ const ENVIRONMENT_VARIABLES_NAMES = {
     clientSecret: 'GITLAB_CLIENT_SECRET',
     domainName: 'GITLAB_TARGET_SERVICE'
 };
-export function get(): GitlabOAuthOptions {
+function loadConfig(): GitlabOAuthOptions {
     let configObject = {
         publicKey: GITLAB_PROXY_PUBLIC_KEY,
         privateKey: GITLAB_PROXY_PRIVATE_KEY,
@@ -44,3 +44,5 @@ function checkConfigObject(config: GitlabOAuthOptions) {
         process.exit(1);
     }
 }
+
+export const GITLAB_OAUTH_PROXY_CONFIG = loadConfig();

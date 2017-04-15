@@ -23,7 +23,6 @@ Example using Docker-compose
 ```
 BASE_DOMAIN=myapp.com
 GITLAB_PROXY_PRIVATE_KEY=
-GITLAB_TARGET=gitlab.com
 GITLAB_PROXY_REDIRECT_URI=frontend.myapp.com/oauth_callback
 GITlAB_CLIENT_ID=
 GITlAB_CLIENT_SECRET=
