@@ -1,11 +1,13 @@
 export interface GitlabOAuthOptions {
     domainName: string;
-    // serverUrl: string;
+    baseUrl: string;
     clientId: string;
     clientSecret: string;
     protocol?: string;
     privateKey: string;
     publicKey: string;
+    originUrlCookieName: string;
+    returnUrlCookieName: string;
     jwtConfig?: { secret: string, algorithms: string[] }
 }
 

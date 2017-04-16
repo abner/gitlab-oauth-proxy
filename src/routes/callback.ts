@@ -6,25 +6,31 @@ export function oauthCallbackRoute(req: express.Request, resp: express.Response)
 
     console.log('BASE URL', req.baseUrl);
 
-    let returnUrl = hostUrl + '/oauth_callback';
-
     let gitlabOAuth = new GitlabOAuth(GITLAB_OAUTH_PROXY_CONFIG);
-    let promisAccessToken = gitlabOAuth.getAccessToken(req.query.code, returnUrl, null);
+    let promisAccessToken = gitlabOAuth.getAccessToken(req.query.code, null);
     promisAccessToken.then((gitlabAccessTokenObject: any) => {
         gitlabOAuth.generateJwt(gitlabAccessTokenObject).then(
             token => {
-                resp.cookie('access_token', token, {
-                    httpOnly: true,
-                    domain: req.host
-                });
-                let returnUrl = req.cookies['gitlab-proxy-returnUrl'];
-                resp.clearCookie('gitlab-proxy-returnUrl');
-                //resp.send(token);
-                resp.redirect(returnUrl);
+                if (req.cookies[GITLAB_OAUTH_PROXY_CONFIG.originUrlCookieName]) {
+                    console.log('ORIGIN URL >>> ', req.cookies[GITLAB_OAUTH_PROXY_CONFIG.originUrlCookieName]);
+                }
+                if (req.cookies[GITLAB_OAUTH_PROXY_CONFIG.returnUrlCookieName]) {
+                    console.log('RETURN URL >>> ', req.cookies[GITLAB_OAUTH_PROXY_CONFIG.returnUrlCookieName]);
+                }
+                resp.send(token);
+                // resp.cookie('access_token', token, {
+                //     httpOnly: true,
+                //     domain: req.host
+                // });
+                // resp.clearCookie('gitlab-proxy-returnUrl');
+                // let returnUrl = req.cookies['gitlab-proxy-returnUrl'];
+                // resp.redirect(returnUrl);
             }
         ).catch(reason => {
             //throw new Error(reason);
             resp.end(reason);
         });
+    }).catch(error => {
+        console.error(error);
     });
 }

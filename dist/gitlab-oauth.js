@@ -1,34 +1,22 @@
-import * as qs from 'querystring';
-import * as _ from 'lodash';
-import * as request from 'request';
-import * as https from 'https';
-import * as jsonWebToken from 'jsonwebtoken';
-
-import { GitlabOAuthOptions, GitlabAccessTokenObject } from './models';
-import { Encrypter } from './encrypter';
-
-import { GITLAB_OAUTH_PROXY_CONFIG } from './config';
-
-export class GitlabOAuth {
-    options: GitlabOAuthOptions;
-    defaultOptions: GitlabOAuthOptions = <any>{ protocol: 'https' };
-
-    authorizeUrl: string;
-    accessTokenUrl: string;
-
-    encrypter: Encrypter;
-
-    constructor(options: GitlabOAuthOptions) {
+"use strict";
+Object.defineProperty(exports, "__esModule", { value: true });
+const qs = require("querystring");
+const request = require("request");
+const https = require("https");
+const jsonWebToken = require("jsonwebtoken");
+const encrypter_1 = require("./encrypter");
+const config_1 = require("./config");
+class GitlabOAuth {
+    constructor(options) {
+        this.defaultOptions = { protocol: 'https' };
         if (!options || !options.clientId || !options.clientSecret || !options.domainName) {
             throw new Error('Parameter is not valid, need client_id and client_secret and server_url!');
         }
         this.options = Object.assign(this.defaultOptions, options);
-
         this.authorizeUrl = '://' + options.domainName + '/oauth/authorize';
         this.accessTokenUrl = '://' + options.domainName + '/oauth/token';
-        this.encrypter = new Encrypter(options.privateKey);
+        this.encrypter = new encrypter_1.Encrypter(options.privateKey);
     }
-
     getAuthorizeURL() {
         var query = {
             client_id: this.options.clientId,
@@ -37,17 +25,15 @@ export class GitlabOAuth {
         };
         var queryString = qs.stringify(query);
         return this.options.protocol + this.authorizeUrl + '?' + queryString;
-    };
-
+    }
+    ;
     getRedirectUri() {
         return this.options.baseUrl + 'oauth_callback';
     }
-
-    getAccessToken(code: any, callback: any) {
-        if (!code) { // || !opts.redirect_uri) {
+    getAccessToken(code, callback) {
+        if (!code) {
             throw new Error('Options cannot be null and need the exchange code and redirect_uri!');
         }
-
         var that = this;
         var oauthData = {
             client_id: this.options.clientId,
@@ -57,15 +43,14 @@ export class GitlabOAuth {
             redirect_uri: this.getRedirectUri()
         };
         // _.merge(oauth_data, opts);
-
-        var accessToken = new Promise<any>(function (resolve: (value: any) => any, reject: (value: any) => any) {
+        var accessToken = new Promise(function (resolve, reject) {
             request.post({
                 url: that.options.protocol + that.accessTokenUrl,
                 form: oauthData,
                 headers: {
                     'Accept': 'application/json'
                 }
-            }, function (err: any, response: any, body: any) {
+            }, function (err, response, body) {
                 if (err || response.statusCode >= 400) {
                     return reject(err || body || response.statusCode);
                 }
@@ -75,25 +60,23 @@ export class GitlabOAuth {
                         return reject(result);
                     }
                     resolve(result);
-                } catch (e) {
+                }
+                catch (e) {
                     reject(e);
                 }
             });
         });
-
         if (typeof callback !== 'function') {
             return accessToken;
         }
-
-        return accessToken.then(
-            function (res: any) {
-                callback(null, res);
-            }, function (err: any) {
-                callback(err);
-            });
-    };
-
-    generateJwt(gitlabToken: GitlabAccessTokenObject) {
+        return accessToken.then(function (res) {
+            callback(null, res);
+        }, function (err) {
+            callback(err);
+        });
+    }
+    ;
+    generateJwt(gitlabToken) {
         // get info from gitlab to the logged User
         return this.getGitlabUser(this.options.domainName, gitlabToken.access_token).then((userData) => {
             debugger;
@@ -107,17 +90,13 @@ export class GitlabOAuth {
                         refreshTokenEnc: this.encrypter.encrypt(gitlabToken.refresh_token),
                     }
                 }
-            },
-                GITLAB_OAUTH_PROXY_CONFIG.privateKey,
-                {
-                    algorithm: 'RS256',
-                    subject: `${this.options.domainName}/user/${userData.id}`,
-                    issuer: 'fast-gitlab-client',
-                    expiresIn: '360 minutes'
-                });
-
-
-            jsonWebToken.verify(token, GITLAB_OAUTH_PROXY_CONFIG.publicKey, { algorithms: ['RS256'] }, (err) => {
+            }, config_1.GITLAB_OAUTH_PROXY_CONFIG.privateKey, {
+                algorithm: 'RS256',
+                subject: `${this.options.domainName}/user/${userData.id}`,
+                issuer: 'fast-gitlab-client',
+                expiresIn: '360 minutes'
+            });
+            jsonWebToken.verify(token, config_1.GITLAB_OAUTH_PROXY_CONFIG.publicKey, { algorithms: ['RS256'] }, (err) => {
                 if (err) {
                     console.error('TOken não é válido!', err);
                 }
@@ -125,9 +104,8 @@ export class GitlabOAuth {
             return token;
         });
     }
-
-    getGitlabUser(domainName: string, accessToken: string) {
-        var promise = new Promise<any>((resolve, reject) => {
+    getGitlabUser(domainName, accessToken) {
+        var promise = new Promise((resolve, reject) => {
             var req = https.request({
                 host: domainName,
                 port: 443,
@@ -138,18 +116,19 @@ export class GitlabOAuth {
             }, (res => {
                 if (res.statusCode === 200) {
                     res.on('data', (payload) => {
-                        var userData = JSON.parse(<string>payload);
+                        var userData = JSON.parse(payload);
                         resolve(userData);
                     });
-                } else {
+                }
+                else {
                     reject({
                         statusCode: res.statusCode
                     });
                 }
-
             }));
             req.end();
         });
         return promise;
     }
 }
+exports.GitlabOAuth = GitlabOAuth;

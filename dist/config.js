@@ -1,12 +1,10 @@
-
-import * as _ from 'lodash';
-import { GitlabOAuthOptions } from './models';
-
+"use strict";
+Object.defineProperty(exports, "__esModule", { value: true });
+const _ = require("lodash");
 let GITLAB_PROXY_PRIVATE_KEY = process.env.GITLAB_PROXY_PRIVATE_KEY || '';
 let GITLAB_PROXY_PUBLIC_KEY = process.env.GITLAB_PROXY_PUBLIC_KEY || '';
 GITLAB_PROXY_PRIVATE_KEY = GITLAB_PROXY_PRIVATE_KEY.replace(/\\n/g, '\n');
 GITLAB_PROXY_PUBLIC_KEY = GITLAB_PROXY_PUBLIC_KEY.replace(/\\n/g, '\n');
-
 const GITLAB_CLIENT_ID = process.env.GITLAB_CLIENT_ID;
 const GITLAB_CLIENT_SECRET = process.env.GITLAB_CLIENT_SECRET;
 const GITLAB_TARGET_SERVICE = process.env.GITLAB_TARGET_SERVICE;
@@ -18,9 +16,9 @@ const ENVIRONMENT_VARIABLES_NAMES = {
     clientSecret: 'GITLAB_CLIENT_SECRET',
     domainName: 'GITLAB_TARGET_SERVICE'
 };
-function loadConfig(): GitlabOAuthOptions {
+function loadConfig() {
     let configObject = {
-        baseUrl: `${GITLAB_PROXY_BASE_URL}`.endsWith('/') ? GITLAB_PROXY_BASE_URL :  GITLAB_PROXY_BASE_URL + '/',
+        baseUrl: `${GITLAB_PROXY_BASE_URL}`.endsWith('/') ? GITLAB_PROXY_BASE_URL : GITLAB_PROXY_BASE_URL + '/',
         publicKey: GITLAB_PROXY_PUBLIC_KEY,
         privateKey: GITLAB_PROXY_PRIVATE_KEY,
         clientId: GITLAB_CLIENT_ID,
@@ -33,10 +31,8 @@ function loadConfig(): GitlabOAuthOptions {
     configObject['jwtConfig'] = { secret: GITLAB_PROXY_PUBLIC_KEY, algorithms: ['RS256'] };
     return configObject;
 }
-
-function checkConfigObject(config: GitlabOAuthOptions) {
+function checkConfigObject(config) {
     let errors = 0;
-
     Object.getOwnPropertyNames(config).forEach((name) => {
         if (_.isEmpty(config[name])) {
             console.error(`Envirionment variable "${ENVIRONMENT_VARIABLES_NAMES[name]}" was not defined.`);
@@ -47,5 +43,4 @@ function checkConfigObject(config: GitlabOAuthOptions) {
         process.exit(1);
     }
 }
-
-export const GITLAB_OAUTH_PROXY_CONFIG = loadConfig();
+exports.GITLAB_OAUTH_PROXY_CONFIG = loadConfig();
