@@ -11,26 +11,23 @@ export function oauthCallbackRoute(req: express.Request, resp: express.Response)
     promisAccessToken.then((gitlabAccessTokenObject: any) => {
         gitlabOAuth.generateJwt(gitlabAccessTokenObject).then(
             token => {
-                if (req.cookies[GITLAB_OAUTH_PROXY_CONFIG.originUrlCookieName]) {
-                    console.log('ORIGIN URL >>> ', req.cookies[GITLAB_OAUTH_PROXY_CONFIG.originUrlCookieName]);
-                }
-                if (req.cookies[GITLAB_OAUTH_PROXY_CONFIG.returnUrlCookieName]) {
-                    console.log('RETURN URL >>> ', req.cookies[GITLAB_OAUTH_PROXY_CONFIG.returnUrlCookieName]);
-                }
                 resp.send(token);
-                // resp.cookie('access_token', token, {
-                //     httpOnly: true,
-                //     domain: req.host
-                // });
-                // resp.clearCookie('gitlab-proxy-returnUrl');
-                // let returnUrl = req.cookies['gitlab-proxy-returnUrl'];
-                // resp.redirect(returnUrl);
+                resp.cookie('gitlab_oauth_proxy_token', token, {
+                    httpOnly: true,
+                    domain: req.host
+                });
+                let returnUrl = req.cookies[GITLAB_OAUTH_PROXY_CONFIG.returnUrlCookieName];
+                resp.clearCookie(GITLAB_OAUTH_PROXY_CONFIG.returnUrlCookieName);
+                resp.redirect(returnUrl);
             }
         ).catch(reason => {
-            //throw new Error(reason);
+            console.error(reason);
+            resp.status(500);
             resp.end(reason);
         });
     }).catch(error => {
+        resp.status(500);
+        resp.end('Unexpected error.');
         console.error(error);
     });
 }

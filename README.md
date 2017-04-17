@@ -49,3 +49,13 @@ Just start it using docker-compose:
 docker-compose up -d
 ```
 
+
+## Testing
+
+- Using Jest for unit and integration tests
+
+
+**References:**
+
+- https://glebbahmutov.com/blog/how-to-correctly-unit-test-express-server/
+- 
